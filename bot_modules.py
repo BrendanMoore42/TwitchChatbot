@@ -45,6 +45,6 @@ class Alfred:
         """Sends random number of set emojies, or if unspecified, random amount"""
         if num == "random":
             random_num = random.randint(1, 8)
-            print(random.choice(self.emoji_list) * random_num)
+            return random.choice(self.emoji_list) * random_num
         else:
-            print(random.choice(self.emoji_list) * num)
+            return random.choice(self.emoji_list) * num
