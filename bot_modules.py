@@ -41,6 +41,10 @@ class Alfred:
         self.vdr = SentimentIntensityAnalyzer()
 
 
+    def remember_chat(self, channel, log, today):
+        """Save the chat to memory"""
+
+
     def send_emoji(self, num="random"):
         """Sends random number of set emojies, or if unspecified, random amount"""
         if num == "random":
