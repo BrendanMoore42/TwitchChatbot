@@ -54,9 +54,13 @@ class Alfred:
             return random.choice(self.emoji_list) * num
 
 
-    def speak(self, emotion="happy"):
+    def speak(self, emotion=None):
         """Intakes an emotion and outputs a phrase"""
+        if not emotion:
+            emotion = random.choice(["happy", "sass", "support"])
         if emotion == "happy":
             return ":)"
-        if emotion == "upset":
+        if emotion == "sass":
             return "omg"
+        if emotion == "support":
+            return "GGs"

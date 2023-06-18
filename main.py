@@ -15,10 +15,11 @@ from bot_modules import Alfred
 
 
 class TwitchBot(irc.bot.SingleServerIRCBot):
-    def __init__(self, username, client_id, token, channel, admin, mode="normal", print_x=5):
+    def __init__(self, username, client_id, token, channel, admin, botname, mode="normal", print_x=5):
         self.mode = mode
         self.channel = "#" + channel  # add hashtag to make connection work
         self.admin = admin  # enables admin commands only accessible to host channel
+        self.botname = botname.lower()  # the name of the bots personality
 
         # Set up Alfred, or the bots personality class
         self.alf = Alfred(iters=1500, memory="Memory/poker.csv", emoji_list=["CoolCat ", "PlupPls ", "PotFriend "])
@@ -28,7 +29,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.follow_reminder = datetime.datetime.now()
         self.today = datetime.datetime.now().strftime("%m_%d_%Y")
 
+        # Set up chat variables
         self.chat_mps = 0  # messages per second
+        self.press_emoji = 0  # how many emojis pressed to prevent spam, will reset
         self.print_every_x = print_x  # print to console every x message, None to disable
         self.message_count = None
         self.chat_logs = []
@@ -139,8 +142,48 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                     if coin >= 2:
                         c.privmsg(self.channel, f"Tut tut. Time between requests {chat_user}")
                     else:
-                        c.privmsg(self.channel, self.alf.speak("upset"))  # send random message of disappointment
+                        c.privmsg(self.channel, self.alf.speak("sass"))  # send random message of disappointment
+                # Set timer for next command
+                self.start_time = datetime.datetime.now()
+            else:
+                time.sleep(1)
+                if e.arguments[0] == "F":
+                    """Here we can isolate specific phrases for unique responses"""
+                    c.privmsg(self.channel, self.alf.speak("support"))
+                for y in e.arguments[0].split(" "):
+                    if y.lower() == self.botname:  # comments addressed to the bot
+                        c.privmsg(self.channel, self.alf.send_emoji())
+                    elif y in ["catJAM", "cowJAM", "PlupPls", "pepeD", "dogJAM"]:  # common spammed animated emotes
+                        coin = self.coin_flip(1, 8)
+                        if coin <= 2:
+                            self.press_emoji += 1
+                            if self.press_emoji < 3:  # send it
+                                c.privmsg(self.channel, (y + " ") * coin)
+                            elif self.press_emoji >= 4:  # reset the counter and chill
+                                time.sleep(coin)
+                                self.press_emoji = 0
+                            break
 
+            if reminder_elapsed > datetime.timedelta(minutes=20):  # if it's been n mins past last reminder
+                coin = self.coin_flip(1, 10)
+
+                # Either drop a follow reminder or say something random
+                if coin == 10:
+                    line = f"Remember to follow {self.admin}!"
+                elif coin >= 8:
+                    # Add custom lines here
+                    line = random.choice(["brb ", "ggs ", "anyone read any good books lately? ",
+                                          "tea break ", "lol I just got a high score on tetris "])
+                elif coin >= 5:
+                    line = self.alf.speak()
+                else:
+                    line = self.alf.send_emoji(coin)
+                c.privmsg(self.channel, line)
+
+                self.follow_reminder = datetime.datetime.now()
+        else:
+            # Add in or change other modes here
+            pass
 
     def run_command(self, e, command):
         """Executes a command and returns bot response"""
@@ -159,4 +202,4 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             pass
 
 
-alf = TwitchBot("_", "_", "_", "_", admin="YourChannel")  # Test params without logging in
+alf = TwitchBot("_", "_", "_", "_", admin="YourChannel", botname="alfred")  # Test params without logging in
