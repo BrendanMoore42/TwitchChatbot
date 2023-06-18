@@ -198,8 +198,79 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         chat_user = e.source.split("!")[0]
 
         def calculate(equation):
-            """Do a math calculation"""
-            pass
+            """Calculator"""
+            if "+" in equation:
+                y = equation.split("+")
+                x = int(y[0] + int(y[1]))
+            if "-" in equation:
+                y = equation.split("-")
+                x = int(y[0] - int(y[1]))
+            if "*" in equation:
+                y = equation.split("*")
+                x = int(y[0] * int(y[1]))
+            if "x" in equation:  # catch if x used instead of "*"
+                y = equation.split("x")
+                x = int(y[0] * int(y[1]))
+            if "/" in equation:
+                y = equation.split("/")
+                x = int(y[0] / int(y[1]))
+            return x
+
+        if command == "follow":
+            c.privmsg(self.channel, f"Remember to follow {self.admin}!")
+        elif command == "8ball":  # answer a yes or no question
+            coin = self.coin_flip(1, 4)
+            line = random.choice(["Doesn't look great ", self.press_emoji(), "Things are looking up ",
+                                  "Listen to your heart ", "A thousand times yes ", "GGs haha gl ",
+                                  "No. No, no, no, no. ", "Most likely ", "Hmm, doubtful ",
+                                  "Ask again later ", "let me just do the math "])
+            if line == "let me just do the math ":
+                time.sleep(coin*2)
+                c.privmsg(self.channel, "lol no ")
+            else:
+                time.sleep(coin)
+                c.privmsg(self.channel, line)
+        elif command == "poker":  # play a round of poker
+            game_info, cards = self.alf.play_poker(player=chat_user)
+            flop = cards[0].split(" ")
+
+            self.alf.rig_deck()
+
+            try:
+                z = e.arguments[0].split(" ")
+                gg = [i + " " + j for i, j in zip(game_info[::2], game_info[1::2])]
+                bot_game = True
+                player_in, player_check = False, False
+                if len(z) != 1:  # are there more players
+                    try:
+                        try:
+                            player_in = z[1].split("@")[1]
+                            player_check = self.alf.check_poker_player(player_in)
+                            print(player_in, player_check)
+                        except:
+                            pass
+
+                        if player_check:
+                            bot_game = False
+                        else:
+                            raise IndexError
+                    except:
+                        bot_game = True
+                        c.privmsg(self.channel, "Let's play instead ")
+                if len(z) == 1 or bot_game:
+                    # Game with the bot and user who initiated comment
+                    player1 = chat_user
+
+                    for ix, turn in enumerate(gg):
+                        if turn.split(",")[0] == "FLOP":
+                            round1 = f"Flop: {' '.join(flop[:3])}, I have {cards[1]}, {player1} has {cards[2]}"
+                            
+
+
+
+
+
+
 
 
 alf = TwitchBot("_", "_", "_", "_", admin="YourChannel", botname="alfred")  # Test params without logging in
