@@ -32,13 +32,23 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.print_every_x = print_x  # print to console every x message, None to disable
         self.message_count = None
         self.chat_logs = []
-        self.admin_commands = ["normal", "chill"]
+
+        """Bot Modes:
+        normal - interacts, does commands, the whole deal
+        chill - will talk but not execute commands 
+        listen - won't interact but will collect data and quietly observe from a distance
+        """
+        self.admin_commands = ["normal", "chill", "listen"]
 
         # Create IRC connection
         server = "irc.chat.twitch.tv"
         port = 6667
         print("Connecting to " + server + " on port " + str(port) + "...")
         irc.bot.SingleServerIRCBot.__init__(self, [(server, port, "oauth:" + token)], username, username)
+
+    def coin_flip(self, low, high):
+        """Returns a random integer between two bounds"""
+        return random.randint(low, high)
 
     def on_welcome(self, c, e):
         print("Joining " + self.channel)
@@ -97,7 +107,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 print(temp_elapsed, self.message_count, self.chat_mps, message_time_str, chat_user, chat_message)
 
         if chat_user == self.admin and chat_message in self.admin_commands:
-            """Admin commands change bots mode from normal, chill, or any additional"""
+            """Admin commands change bots mode from normal, chill, or any additional modes added"""
             print(f"{self.admin} command: {chat_message}")
             for command in self.admin_commands:
                 if chat_message == command:
@@ -114,7 +124,39 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             self.alf.remember_chat(self.channel, self.chat_logs, self.today)
             print('Remembering chat...\n')
 
+        # Normal functions, execute commands, respond to things, all the fun
+        if self.mode == "normal":
+            # Message is a command (starts with "!")
+            if e.arguments[0][:1] == "!":
+                command = e.arguments[0].split(" ")[0][1:].lower()
+                print(f"Received command: {command}")
 
+                if message_elasped > datetime.timedelta(seconds=2):
+                    self.run_command(e, command)
+                else:
+                    # Prevent command spam if too many requests received at once
+                    coin = self.coin_flip(1, 3)
+                    if coin >= 2:
+                        c.privmsg(self.channel, f"Tut tut. Time between requests {chat_user}")
+                    else:
+                        c.privmsg(self.channel, self.alf.speak("upset"))  # send random message of disappointment
+
+
+    def run_command(self, e, command):
+        """Executes a command and returns bot response"""
+
+        # Ignore if in quiet modes
+        if self.mode in ["chill", "listen"]:
+            return
+
+        # Set up connection for sending message
+        c = self.connection
+        # Pull user from message
+        chat_user = e.source.split("!")[0]
+
+        def calculate(equation):
+            """Do a math calculation"""
+            pass
 
 
 alf = TwitchBot("_", "_", "_", "_", admin="YourChannel")  # Test params without logging in
