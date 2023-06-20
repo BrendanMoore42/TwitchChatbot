@@ -61,6 +61,15 @@ class Alfred:
         else:
             return False
 
+    def go_fishing(self, user, bait):
+        """Go fishing, different baits change the odds to catch fish"""
+        coin = random.randint(1, 100)
+        if bait:
+            coin = coin * 2
+        if coin % 11 == 0:
+            fish = "guppy"
+        return fish
+
     def play_poker(self, player):
         """Poker/Deuces Package: Needs to be updated to python 3, package in this works,
          but pip install is broken"""
@@ -103,10 +112,16 @@ class Alfred:
     def speak(self, emotion=None):
         """Intakes an emotion and outputs a phrase"""
         if not emotion:
-            emotion = random.choice(["happy", "sass", "support"])
+            emotion = random.choice(["happy", "sass", "support", "gloat"])
         if emotion == "happy":
-            return ":)"
+            return ":) "
         if emotion == "sass":
-            return "omg"
+            return "omg "
         if emotion == "support":
-            return "GGs"
+            return "GGs "
+        if emotion == "gloat":
+            return "ez pz "
+
+    def update_score(self, game, score):
+        if game == "poker":
+            pass

@@ -218,9 +218,10 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
         if command == "follow":
             c.privmsg(self.channel, f"Remember to follow {self.admin}!")
+
         elif command == "8ball":  # answer a yes or no question
             coin = self.coin_flip(1, 4)
-            line = random.choice(["Doesn't look great ", self.press_emoji(), "Things are looking up ",
+            line = random.choice(["Doesn't look great ", self.alf.send_emoji(), "Things are looking up ",
                                   "Listen to your heart ", "A thousand times yes ", "GGs haha gl ",
                                   "No. No, no, no, no. ", "Most likely ", "Hmm, doubtful ",
                                   "Ask again later ", "let me just do the math "])
@@ -230,11 +231,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             else:
                 time.sleep(coin)
                 c.privmsg(self.channel, line)
+
         elif command == "poker":  # play a round of poker
             game_info, cards = self.alf.play_poker(player=chat_user)
             flop = cards[0].split(" ")
 
-            self.alf.rig_deck()
+            self.alf.rig_deck()  # for the record, this does nothing
 
             try:
                 z = e.arguments[0].split(" ")
@@ -259,18 +261,54 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                         c.privmsg(self.channel, "Let's play instead ")
                 if len(z) == 1 or bot_game:
                     # Game with the bot and user who initiated comment
+                    player1 = self.botname
+                    player2 = chat_user
+                else:
+                    # Two chat users
                     player1 = chat_user
+                    player2 = z[1].split("@")[1]
 
-                    for ix, turn in enumerate(gg):
-                        if turn.split(",")[0] == "FLOP":
-                            round1 = f"Flop: {' '.join(flop[:3])}, I have {cards[1]}, {player1} has {cards[2]}"
-                            
+                for ix, turn in enumerate(gg):
+                    if turn.split(",")[0] == "FLOP":
+                        c.privmsg(self.channel, f"Flop: {' '.join(flop[:3])}, I have {cards[1]}, {player1} has {cards[2]}")
+                    if turn.split(",")[0] == "TURN":
+                        float_match = re.findall("[+-]?\d+\.\d+", turn)  # get percentages
+                        c.privmsg(self.channel, f"Turn: {' '.join(flop[:4])}, Chane of winning, player 1: {float_match[0][2:]}%, player 2: {float_match[1][2:]}%")
+                    if turn.split(",")[0] == "RIVER":
+                        c.privmsg(self.channel, f"River: {' '.join(flop[:5])}")
 
+                time.sleep(self.coin_flip(1, 3))
 
+                try:
+                    winning_hand = game_info[-1].split(",")[1]
+                    winner = int(game_info[-1].split(":")[1].split(",")[0])
+                    if winner == 1:
+                        victor = f"{self.alf.speak('gloat')} player 1 wins with {winning_hand} {self.alf.send_emoji()}"
+                        outcome = [player1, 1, player2, 0]
+                    else:
+                        victor = f"{self.alf.speak('gloat')} player 2 wins with {winning_hand} {self.alf.send_emoji()}"
+                        outcome = [player1, 0, player2, 1]
+                    self.alf.update_score("poker", outcome)
+                    c.privmsg(self.channel, victor)
+                except IndexError as e:
+                    print("Weird..", e)
+                    c.privmsg(self.channel, "Very well, a Draw." + self.alf.speak("sass"))
+            except TypeError as e:
+                print(e)
+                c.privmsg(self.channel, self.alf.send_emoji())
 
-
-
-
+        elif command in ["cast", "fish"]:
+            try:
+                bait = e.arguments[0].split(" ")[1]
+            except IndexError as e:
+                bait = None
+            if bait:
+                c.privmsg(self.channel, f"{chat_user} throws out a line with {bait} as bait")
+            else:
+                c.privmsg(self.channel, f"{chat_user} throws out a line with no bait...good luck")
+            time.sleep(self.coin_flip(2, 6))
+            fish = self.alf.go_fishing(chat_user, bait)
+            c.privmsg(self.channel, fish)
 
 
 alf = TwitchBot("_", "_", "_", "_", admin="YourChannel", botname="alfred")  # Test params without logging in
